@@ -4,11 +4,12 @@ import requests
 import pandas as pd
 from flask import Flask, request, render_template, session
 
-app = Flask(__name__) 
+app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 def fetch_poster(movie_id):
-    url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(movie_id)
+    url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(
+        movie_id)
     data = requests.get(url)
     data = data.json()
     poster_path = data['poster_path']
@@ -16,12 +17,7 @@ def fetch_poster(movie_id):
     return full_path
 
 def recommend(movie):
-    # Load the movies data from the movies_list.pkl file
-    movies = pd.read_pickle('model/movies_list.pkl')
-
     index = movies[movies['title'] == movie].index[0]
-    # Load the similarity data from the similarity.pkl file
-    similarity = pd.read_pickle('model/similarity.pkl')
     # Add your recommendation logic here
     distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
     recommended_movies_name = []
@@ -47,9 +43,6 @@ def contact():
 
 @app.route('/recommendation', methods=['GET', 'POST'])
 def recommendation():
-    # Load the movies data from the movies_list.pkl file
-    movies = pd.read_pickle('model/movies_list.pkl')
-
     movie_list = movies['title'].values
     status = False
     if request.method == "POST":
@@ -66,7 +59,7 @@ def recommendation():
             return render_template("prediction.html", error=error, movie_list=movie_list, status=status)
     else:
         session.pop('selected_movie', None)
-        return render_template("prediction.html", movie_list=movie_list, status=status) 
+        return render_template("prediction.html", movie_list=movie_list, status=status)
 
 if __name__ == '__main__':
     # Specify the path to the zip file
@@ -75,10 +68,18 @@ if __name__ == '__main__':
     # Specify the filename of the similarity file within the zip file
     similarity_file = 'similarity.pkl'
 
-    # Open the zip file
+    # Extract the similarity file from the zip file
     with zipfile.ZipFile(zip_file_path, 'r') as zipf:
-        # Extract the similarity file from the zip file
         zipf.extract(similarity_file, 'model/')
+
+    # Load the similarity data from the extracted file
+    similarity = pd.read_pickle(f'model/{similarity_file}')
+
+    # Remove the extracted file
+    os.remove(f'model/{similarity_file}')
+
+    # Load the movies data from the movies_list.pkl file
+    movies = pd.read_pickle('model/movies_list.pkl')
 
     # Run the Flask application
     app.run(debug=True)
