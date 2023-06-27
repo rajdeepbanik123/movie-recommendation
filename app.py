@@ -20,6 +20,8 @@ def recommend(movie):
     movies = pd.read_pickle('model/movies_list.pkl')
 
     index = movies[movies['title'] == movie].index[0]
+    # Load the similarity data from the similarity.pkl file
+    similarity = pd.read_pickle('model/similarity.pkl')
     # Add your recommendation logic here
     distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
     recommended_movies_name = []
@@ -77,12 +79,6 @@ if __name__ == '__main__':
     with zipfile.ZipFile(zip_file_path, 'r') as zipf:
         # Extract the similarity file from the zip file
         zipf.extract(similarity_file, 'model/')
-
-    # Load the similarity data from the extracted file
-    similarity = pd.read_pickle(f'model/{similarity_file}')
-
-    # Remove the extracted file
-    os.remove(f'model/{similarity_file}')
 
     # Run the Flask application
     app.run(debug=True)
