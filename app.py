@@ -1,15 +1,20 @@
-import zipfile
-import os
-import requests
-import pandas as pd
 from flask import Flask, request, render_template, session
+import pickle
+import requests
+import pandas as pd 
+import zipfile
 
-app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+
+
+movies = pickle.load(open('model/movies_list.pkl', 'rb'))
+with zipfile.ZipFile('model/similarity.zip', 'r') as zip_ref:
+    zip_ref.extractall('model')
+
+# Load the pickled data
+similarity = pickle.load(open('model/similarity.pkl', 'rb'))
 
 def fetch_poster(movie_id):
-    url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(
-        movie_id)
+    url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(movie_id)
     data = requests.get(url)
     data = data.json()
     poster_path = data['poster_path']
@@ -28,6 +33,8 @@ def recommend(movie):
         recommended_movies_name.append(movies.iloc[i[0]].title)
 
     return recommended_movies_name, recommended_movies_poster
+app = Flask(__name__) 
+app.secret_key = 'your_secret_key'
 
 @app.route('/')
 def home():
@@ -59,27 +66,7 @@ def recommendation():
             return render_template("prediction.html", error=error, movie_list=movie_list, status=status)
     else:
         session.pop('selected_movie', None)
-        return render_template("prediction.html", movie_list=movie_list, status=status)
+        return render_template("prediction.html", movie_list=movie_list, status=status) 
 
 if __name__ == '__main__':
-    # Specify the path to the zip file
-    zip_file_path = 'model/similarity.zip'
-
-    # Specify the filename of the similarity file within the zip file
-    similarity_file = 'similarity.pkl'
-
-    # Extract the similarity file from the zip file
-    with zipfile.ZipFile(zip_file_path, 'r') as zipf:
-        zipf.extract(similarity_file, 'model/')
-
-    # Load the similarity data from the extracted file
-    similarity = pd.read_pickle(f'model/{similarity_file}')
-
-    # Remove the extracted file
-    os.remove(f'model/{similarity_file}')
-
-    # Load the movies data from the movies_list.pkl file
-    movies = pd.read_pickle('model/movies_list.pkl')
-
-    # Run the Flask application
-    app.run(debug=True)
+    app.run(debug=True) 
